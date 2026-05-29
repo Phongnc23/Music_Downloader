@@ -9,6 +9,7 @@ import org.openqa.selenium.Dimension;
 import org.openqa.selenium.Rectangle;
 import org.openqa.selenium.WebElement;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -18,8 +19,14 @@ import constants.AppConstants;
 
 public class AdHelper {
 
-    /** Vòng 1 chờ tối đa bấy nhiêu cho ad load (mạng chậm); vòng sau cũng chờ {@link #NEXT_LAYER_WAIT_MS}. */
-    private static final long INITIAL_LOAD_WAIT_MS = 7_000;
+    /**
+     * Cửa sổ chờ ad launch xuất hiện (detect theo currentActivity). Ad thường hiện
+     * ~6-10s sau khi mở app; để 15s cho dư margin (mạng chậm / SDK load lâu) — nếu
+     * ngắn quá (vd 7s) ad hiện ngay sau khi cửa sổ đóng → "No ad detected" rồi test
+     * assert trúng ad → FAIL. App này luôn có ad nên detect xong là thoát ngay,
+     * không phải chờ đủ 15s.
+     */
+    private static final long INITIAL_LOAD_WAIT_MS = 15_000;
     private static final long LOAD_POLL_INTERVAL_MS = 700;
     /** Ad video có countdown — chờ Skip enable tối đa bấy nhiêu. */
     private static final long SKIP_COUNTDOWN_TIMEOUT_MS = 25_000;
@@ -149,10 +156,70 @@ public class AdHelper {
         }
 
         System.out.println("🔎 Detected ad activity: " + type);
-        // Bypass mọi ad full-screen bằng poll-restart: lặp restart MainActivity tới
-        // khi currentActivity rời ad VÀ ổn định → tự xử lý ad nhiều lớp / ad bật lại,
-        // không treo, không phụ thuộc toạ độ, miễn nhiễm instrumentation crash.
-        bypassAdByRestart(40_000);
+        // Ưu tiên ĐÓNG ad in-place để LỘ home đã load sẵn (vào được màn chính thật),
+        // chỉ restart khi không đóng nổi (instrumentation crash).
+        dismissAdReachHome(30_000);
+    }
+
+    /**
+     * Đóng ad để VÀO ĐƯỢC HOME THẬT — ưu tiên không restart.
+     *
+     * <p>Quan trọng: ad interstitial render ĐÈ LÊN home đã load sẵn. Nên chỉ cần đóng
+     * ad là home lộ ra ngay (in-place). Nếu restart (startActivity) thì app chạy lại
+     * splash "Getting ready…" → không vào thẳng home.
+     *
+     * <p>Đóng kiểu nào tuỳ máy:
+     * <ul>
+     *   <li><b>UI đọc được</b> (vd Pixel 3 — instrumentation KHÔNG crash): tìm nút đóng
+     *       bằng locator ({@code dismiss-button}/Close/Đóng/Skip) rồi click → lộ home.
+     *       Vị trí nút bất kỳ (góc trên/dưới) đều đúng vì click theo element thật.</li>
+     *   <li><b>Instrumentation CRASH</b> (vd Oppo + ad video WebView): findElements vô dụng/
+     *       treo → phát hiện bằng {@code getWindowSize()} fail nhanh → restart (chấp nhận splash).</li>
+     * </ul>
+     */
+    private boolean dismissAdReachHome(long maxWaitMs) {
+        // Tắt implicit wait để findElements trả về NGAY (không chờ 5s × nhiều locator).
+        Duration prevWait = null;
+        try {
+            prevWait = driver.manage().timeouts().getImplicitWaitTimeout();
+            driver.manage().timeouts().implicitlyWait(Duration.ZERO);
+        } catch (Exception ignored) {}
+
+        try {
+            long deadline = System.currentTimeMillis() + maxWaitMs;
+            while (System.currentTimeMillis() < deadline) {
+                if (detectByCurrentActivity() == AdType.NONE) {
+                    System.out.println("✅ Đã vào home (ad đã đóng, không restart)");
+                    return true;
+                }
+                // Probe instrumentation: getWindowSize fail nhanh nếu đã crash.
+                boolean alive;
+                try { driver.manage().window().getSize(); alive = true; }
+                catch (Exception e) { alive = false; }
+
+                if (!alive) {
+                    System.out.println("⚠ Instrumentation crash → không đóng in-place được → restart");
+                    return restartToMainActivity();
+                }
+
+                // Instrumentation sống → click nút đóng (lộ home, GIỮ in-place).
+                if (clickFirst(googleCloseLocators()) || clickFirst(xOrSkipLocators())) {
+                    sleep(1000);
+                    if (detectByCurrentActivity() == AdType.NONE) {
+                        System.out.println("🛑 Đóng ad bằng locator → vào HOME THẬT (không restart)");
+                        return true;
+                    }
+                }
+                sleep(800);  // nút đóng có thể chưa hiện (countdown) → chờ rồi thử lại
+            }
+            System.out.println("⚠ Không đóng được ad trong " + (maxWaitMs / 1000) + "s → restart");
+            return restartToMainActivity();
+        } finally {
+            // Khôi phục implicit wait
+            try {
+                if (prevWait != null) driver.manage().timeouts().implicitlyWait(prevWait);
+            } catch (Exception ignored) {}
+        }
     }
 
     private AdType waitAndDetectAdType(long waitMs) {
