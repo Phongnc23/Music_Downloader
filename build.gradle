@@ -1,0 +1,44 @@
+plugins {
+    id 'java'
+}
+
+group = 'org.example'
+version = '1.0-SNAPSHOT'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // Appium + Selenium
+    implementation 'io.appium:java-client:9.3.0'
+    implementation 'org.seleniumhq.selenium:selenium-java:4.27.0'
+
+    // TestNG
+    implementation 'org.testng:testng:7.11.0'
+
+    // ExtentReports
+    implementation 'com.aventstack:extentreports:5.1.2'
+
+    // Log4j 2 (CHI dung log4j, khong dung slf4j-simple cung luc)
+    implementation 'org.apache.logging.log4j:log4j-api:2.26.0'
+    implementation 'org.apache.logging.log4j:log4j-core:2.26.0'
+    // Bridge: Appium/Selenium dung SLF4J -> route ve log4j
+    implementation 'org.apache.logging.log4j:log4j-slf4j2-impl:2.26.0'
+
+    // Apache Commons (cho ScreenshotUtils)
+    implementation 'commons-io:commons-io:2.18.0'
+}
+
+test {
+    useTestNG() {
+        suiteXmlFiles = [file('src/test/resources/regression.xml')]
+    }
+
+    testLogging {
+        events 'passed', 'skipped', 'failed', 'standardOut', 'standardError'
+        showStandardStreams = true
+        exceptionFormat = 'full'
+    }
+}
+
