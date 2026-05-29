@@ -3,7 +3,7 @@ package base;
 import constants.AppConstants;
 import driver.DriverFactory;
 import driver.DriverManager;
-import helpers.ScreenObserverAdHandler;
+import helpers.AdHelper;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import org.apache.logging.log4j.LogManager;
@@ -19,21 +19,19 @@ public class BaseTest {
 
     protected static final Logger logger = LogManager.getLogger(BaseTest.class);
     protected AppiumDriver driver;
-    protected ScreenObserverAdHandler adHandler;
 
     @BeforeClass(alwaysRun = true)
     public void setUp() {
         logger.info("========== SETUP TEST CLASS ==========");
         driver = DriverFactory.createDriver();
         DriverManager.setDriver(driver);
-        adHandler = new ScreenObserverAdHandler((AndroidDriver) driver);
         logger.info("App da launch: " + AppConstants.APP_PACKAGE);
     }
 
     @BeforeMethod(alwaysRun = true)
     public void handleAdBeforeTest() {
         try {
-            adHandler.dismissAd();
+            new AdHelper((AndroidDriver) driver).dismissAllAds();
         } catch (Exception e) {
             logger.warn("Loi xu ly quang cao: " + e.getMessage());
         }
