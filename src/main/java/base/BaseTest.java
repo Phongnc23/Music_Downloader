@@ -33,7 +33,10 @@ public class BaseTest {
         try {
             new AdHelper((AndroidDriver) driver).dismissAllAds();
         } catch (Exception e) {
-            logger.warn("Loi xu ly quang cao: " + e.getMessage());
+            // In ra stdout (khong co log4j config nen logger.warn bi nuot) de thay
+            // exception that su lam dismiss ad that bai.
+            System.out.println("❌ Loi xu ly quang cao: " + e);
+            e.printStackTrace(System.out);
         }
     }
 

@@ -19,17 +19,17 @@ import constants.AppConstants;
 public class AdHelper {
 
     /** Vòng 1 chờ tối đa bấy nhiêu cho ad load (mạng chậm); vòng sau cũng chờ {@link #NEXT_LAYER_WAIT_MS}. */
-    private static final long INITIAL_LOAD_WAIT_MS = 3_000;
-    private static final long LOAD_POLL_INTERVAL_MS = 500;       // giam tu 700
-    /** Skip video countdown - GIU NGUYEN 25s vi video dai can 12s+ */
+    private static final long INITIAL_LOAD_WAIT_MS = 7_000;
+    private static final long LOAD_POLL_INTERVAL_MS = 700;
+    /** Ad video có countdown — chờ Skip enable tối đa bấy nhiêu. */
     private static final long SKIP_COUNTDOWN_TIMEOUT_MS = 25_000;
-    private static final long SKIP_POLL_INTERVAL_MS = 500;       // giam tu 800
-    /** Giam max rounds tu 12 xuong 5 - du cho 99% case thuc te */
-    private static final int MAX_DISMISS_ROUNDS = 5;
-    /** Giam tu 1.5s xuong 0.5s */
-    private static final long ROUND_DELAY_MS = 500;
-    /** Giam tu 4s xuong 1.5s - layer ad neu co thuong xuat hien ngay */
-    private static final long NEXT_LAYER_WAIT_MS = 1_500;
+    private static final long SKIP_POLL_INTERVAL_MS = 800;
+    /** Lặp xử lý ad chồng ad (multi-tier — hỗ trợ tới ~12 layers). */
+    private static final int MAX_DISMISS_ROUNDS = 12;
+    /** Delay giữa các vòng (cho ad layer tiếp theo render). */
+    private static final long ROUND_DELAY_MS = 1_500;
+    /** Sau khi đóng 1 layer, chờ tối đa bấy nhiêu cho ad layer tiếp theo xuất hiện. */
+    private static final long NEXT_LAYER_WAIT_MS = 4_000;
 
     private final AndroidDriver driver;
     private final String appPackage;
@@ -112,45 +112,47 @@ public class AdHelper {
     }
 
     /**
-     * Entry point duy nhất. Vòng 1 chờ vài giây cho ad load (xử lý mạng chậm),
-     * tự phân loại ad rồi áp strategy đóng phù hợp. Lặp tối đa MAX_DISMISS_ROUNDS lần.
+     * Entry point duy nhất — phiên bản CHO APP FLUTTER.
+     *
+     * <p>App này là Flutter và ad (Google interstitial) render trong WebView đè lên
+     * canvas Flutter. Hệ quả thực nghiệm:
+     * <ul>
+     *   <li>UI Flutter/ad KHÔNG nằm trong accessibility tree → mọi locator
+     *       ({@code findElements}) đều không thấy gì.</li>
+     *   <li>Ad WebView THƯỜNG làm CRASH tiến trình UiAutomator2 instrumentation. Sau
+     *       crash, mọi lệnh đi qua instrumentation ({@code findElements}, {@code getWindowSize},
+     *       {@code pressKey}, {@code clickGesture}) đều fail HOẶC TREO lâu.</li>
+     * </ul>
+     *
+     * <p>Vì vậy luồng này CHỈ dùng lệnh cấp ADB (sống sót qua instrumentation crash):
+     * phát hiện ad bằng {@code currentActivity} và bypass bằng cách restart
+     * MainActivity ({@code mobile: startActivity}). KHÔNG đụng tới findElements /
+     * toạ độ / BACK — những thứ gây "lúc được lúc không" và treo trước đây.
      */
     public void dismissAllAds() {
-        // Trước khi check ad — đảm bảo đang ở app. Ad có thể đã redirect ra
-        // Play Store / Chrome / etc., nếu không recover thì check ad vô nghĩa.
+        // Đảm bảo đang ở app (recover nếu ad đã redirect ra Play Store/Chrome).
+        // Lúc này app vừa launch, instrumentation còn sống nên an toàn.
         ensureInOurApp();
 
-        int dismissedCount = 0;
-        for (int round = 1; round <= MAX_DISMISS_ROUNDS; round++) {
-            // Round 1: chờ ad load lâu (mạng chậm). Round sau: chờ multi-tier
-            // ad layer tiếp theo render sau khi đóng layer trước.
-            long waitMs = (round == 1) ? INITIAL_LOAD_WAIT_MS : NEXT_LAYER_WAIT_MS;
-            AdType type = waitAndDetectAdType(waitMs);
-
-            if (type == AdType.NONE) {
-                if (round == 1) System.out.println("✅ No ad detected");
-                return;
-            }
-
-            System.out.println("🔎 Round " + round + " — detected: " + type);
-            if (!dismissByType(type)) {
-                System.out.println("⚠ Could not dismiss " + type + " in round " + round
-                        + " — fallback to restart app");
-                // Nuclear option: ad không có nút skip / dismiss → restart app để bypass
-                restartToMainActivity();
-                return;
-            }
-            dismissedCount++;
-            // Nếu đã dismiss 5+ layer mà ad cứ tiếp tục → có thể loop ad không kết thúc
-            // → restart app cho clean
-            if (dismissedCount >= 5) {
-                System.out.println("☢ Too many ad layers (" + dismissedCount
-                        + ") — restart app to bypass");
-                restartToMainActivity();
-                return;
-            }
-            sleep(ROUND_DELAY_MS);
+        // Chờ ad đầu tiên xuất hiện — CHỈ theo currentActivity (ADB), không findElements.
+        long deadline = System.currentTimeMillis() + INITIAL_LOAD_WAIT_MS;
+        AdType type = AdType.NONE;
+        while (System.currentTimeMillis() < deadline) {
+            type = detectByCurrentActivity();
+            if (type != AdType.NONE) break;
+            sleep(LOAD_POLL_INTERVAL_MS);
         }
+
+        if (type == AdType.NONE) {
+            System.out.println("✅ No ad detected (activity-based)");
+            return;
+        }
+
+        System.out.println("🔎 Detected ad activity: " + type);
+        // Bypass mọi ad full-screen bằng poll-restart: lặp restart MainActivity tới
+        // khi currentActivity rời ad VÀ ổn định → tự xử lý ad nhiều lớp / ad bật lại,
+        // không treo, không phụ thuộc toạ độ, miễn nhiễm instrumentation crash.
+        bypassAdByRestart(40_000);
     }
 
     private AdType waitAndDetectAdType(long waitMs) {
@@ -223,7 +225,7 @@ public class AdHelper {
     private boolean dismissByType(AdType type) {
         switch (type) {
             case VIDEO_SKIP_COUNTDOWN: return dismissVideoSkipAd();
-            case GOOGLE_AD:      return pollAndClose(googleCloseLocators(), 15_000);
+            case GOOGLE_AD:      return bypassAdByRestart(40_000);
             case FACEBOOK_AD:    return clickFirst(facebookCloseLocators())   || dismissAnyCloseButton();
             case UNITY_AD:       return clickFirst(unityCloseLocators())      || dismissAnyCloseButton();
             case APPLOVIN_AD:    return clickFirst(applovinCloseLocators())   || dismissAnyCloseButton();
@@ -234,7 +236,10 @@ public class AdHelper {
             case SMARTDIGIMKT_AD: return dismissSdmRewardAd()
                     || pollAndClose(smartdigimktCloseLocators(), 15_000);
             case APP_POPUP:      return pollClickFirst(appPopupCloseLocators(), 15_000);
-            case UNKNOWN:        return dismissAnyCloseButton();
+            // App Flutter: ad lạ/không rõ SDK cũng render WebView/activity → locator vô dụng
+            // và dismissAnyCloseButton (quét findElements) sẽ TREO vì chờ implicit-wait qua
+            // hàng chục locator không tồn tại. Dùng poll-restart (ADB-level) cho chắc & không treo.
+            case UNKNOWN:        return bypassAdByRestart(40_000);
             default: return false;
         }
     }
@@ -335,6 +340,185 @@ public class AdHelper {
     private boolean restartAfterRiskyTap() {
         restartToMainActivity();
         return true;
+    }
+
+    /**
+     * BYPASS AD BẰNG POLL + RESTART — cách DUY NHẤT đáng tin cho app Flutter này.
+     *
+     * <p>Lý do: ad WebView (Google interstitial) đè lên Flutter làm CRASH tiến trình
+     * UiAutomator2 instrumentation một cách bất thường ("lúc bypass được lúc không").
+     * Khi instrumentation đã chết thì MỌI thao tác UI đều fail —
+     * {@code getWindowSize}, {@code pressKey(BACK)}, {@code clickGesture} (tap toạ độ),
+     * {@code findElements} (mọi locator). Chỉ 2 thứ SỐNG SÓT vì đi đường ADB chứ
+     * không qua instrumentation:
+     * <ul>
+     *   <li>{@link #detectByCurrentActivity()} — đọc currentActivity (adb dumpsys)</li>
+     *   <li>{@code mobile: startActivity} — bật lại MainActivity</li>
+     * </ul>
+     *
+     * <p>Vòng lặp: thấy đang ở ad activity → startActivity MainActivity; coi là
+     * thành công khi currentActivity RỜI ad VÀ ổn định (không bật lại) qua vài
+     * lần kiểm tra liên tiếp — tránh trường hợp ad vừa tắt lại bật lên ngay làm
+     * test assert trúng ad.
+     */
+    private boolean bypassAdByRestart(long maxWaitMs) {
+        System.out.println("🎯 Bypass ad bằng poll + restart MainActivity (ADB-level, sống sót instrumentation crash)");
+        final int STABLE_CHECKS = 2;             // số lần liên tiếp thấy non-ad mới coi là ổn định
+        final long CHECK_INTERVAL_MS = 1_500;
+        long deadline = System.currentTimeMillis() + maxWaitMs;
+        int stable = 0;
+        while (System.currentTimeMillis() < deadline) {
+            if (detectByCurrentActivity() != AdType.NONE) {
+                System.out.println("🔄 Vẫn ở ad activity → startActivity MainActivity");
+                startMainActivity();
+                stable = 0;
+                sleep(CHECK_INTERVAL_MS);
+                continue;
+            }
+            stable++;
+            if (stable >= STABLE_CHECKS) {
+                System.out.println("✅ Đã thoát ad, MainActivity ổn định");
+                return true;
+            }
+            sleep(CHECK_INTERVAL_MS);
+        }
+        System.out.println("⚠ bypassAdByRestart hết " + (maxWaitMs / 1000) + "s vẫn còn ad");
+        return detectByCurrentActivity() == AdType.NONE;
+    }
+
+    /** Bật lại MainActivity qua {@code mobile: startActivity} (ADB-level — không cần instrumentation). */
+    private void startMainActivity() {
+        String pkg = AppConstants.APP_PACKAGE;
+        String activity = AppConstants.APP_ACTIVITY;
+        if (pkg == null || activity == null) return;
+        try {
+            driver.executeScript("mobile: startActivity",
+                    java.util.Map.of("component", pkg + "/" + activity, "wait", true));
+        } catch (Exception e) {
+            System.out.println("⚠ startActivity failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * ĐÓNG AD GIỮ NGUYÊN MÀN — KHÔNG restart app. Dùng cho ad bật lên GIỮA lúc test
+     * điều hướng (bấm nút / vào màn khác), khi {@link #bypassAdByRestart} sẽ làm mất
+     * state vì đá về splash/home.
+     *
+     * <p>Cơ chế: tap nút đóng bằng <b>ADB {@code input tap}</b> (KHÔNG qua Appium):
+     * <ul>
+     *   <li>Sống sót khi UiAutomator2 instrumentation crash (giống startActivity).</li>
+     *   <li>Chỉ tap đóng ad → activity ad bị pop → trả về ĐÚNG màn Flutter đang đứng,
+     *       KHÔNG load lại app.</li>
+     * </ul>
+     *
+     * <p>Nút đóng nằm trong WebView (locator mù), vị trí khác nhau theo creative và
+     * chỉ hiện sau countdown (~15-18s). → poll tới {@code maxWaitMs}, mỗi vòng tap
+     * góc trên-TRÁI ("Đóng") rồi góc trên-PHẢI (X), toạ độ relative theo screen size
+     * (lấy qua {@code wm size}). Tap trái trước vì góc phải lúc video hay là nút
+     * "Cài đặt"/Install → tránh redirect; lỡ văng ra app khác thì BACK (ADB) kéo về.
+     *
+     * <p>BACK đơn thuần KHÔNG đủ (nhiều creative lờ BACK) nên ưu tiên tap toạ độ.
+     *
+     * @return true nếu đã rời ad (giữ nguyên màn); false nếu hết giờ vẫn còn ad
+     *         (caller có thể gọi {@link #bypassAdByRestart} chấp nhận mất state).
+     */
+    public boolean dismissAdKeepState(long maxWaitMs) {
+        if (detectByCurrentActivity() == AdType.NONE) return true;
+        int[] sz = adbScreenSize();
+        if (sz == null) {
+            System.out.println("⚠ Không lấy được screen size qua ADB → không tap được");
+            return false;
+        }
+        int w = sz[0], h = sz[1];
+        // Ứng viên nút đóng: góc trên-TRÁI trước (an toàn), rồi góc trên-PHẢI.
+        int[][] candidates = {
+                {(int) (w * 0.08), (int) (h * 0.045)},  // top-left "Đóng"
+                {(int) (w * 0.05), (int) (h * 0.03)},   // top-left sát mép
+                {(int) (w * 0.95), (int) (h * 0.04)},   // top-right X
+        };
+        System.out.println("🎯 Đóng ad GIỮ-STATE bằng ADB tap (không restart) — poll chờ end-card");
+        long deadline = System.currentTimeMillis() + maxWaitMs;
+        while (System.currentTimeMillis() < deadline) {
+            if (detectByCurrentActivity() == AdType.NONE) {
+                System.out.println("✅ Đã đóng ad, GIỮ NGUYÊN màn (không restart)");
+                return true;
+            }
+            for (int[] c : candidates) {
+                adbTap(c[0], c[1]);
+                sleep(800);
+                // Lỡ tap trúng content → văng ra Play Store/Chrome → BACK (ADB) kéo về
+                String pkg = currentPackageSafe();
+                if (pkg != null && !pkg.isEmpty() && !pkg.equals(appPackage)) {
+                    System.out.println("⚠ Tap văng ra " + pkg + " → BACK (ADB)");
+                    adbBack();
+                    sleep(800);
+                }
+                if (detectByCurrentActivity() == AdType.NONE) {
+                    System.out.println("🛑 Đóng ad qua ADB tap (" + c[0] + "," + c[1] + ") — giữ state");
+                    return true;
+                }
+            }
+            sleep(1200);
+        }
+        System.out.println("⚠ Không đóng được ad giữ-state trong " + (maxWaitMs / 1000) + "s");
+        return detectByCurrentActivity() == AdType.NONE;
+    }
+
+    // ===== ADB-level helpers (đi thẳng qua adb, KHÔNG qua UiAutomator2 instrumentation
+    //       → sống sót kể cả khi instrumentation đã crash vì ad WebView) =====
+
+    /** Chạy {@code adb [-s <udid>] shell <args...>}, trả stdout (rỗng nếu lỗi). */
+    private String adbShell(String... shellArgs) {
+        try {
+            List<String> cmd = new ArrayList<>();
+            cmd.add("adb");
+            String udid = AppConstants.UDID;
+            if (udid != null && !udid.isEmpty()) {
+                cmd.add("-s");
+                cmd.add(udid);
+            }
+            cmd.add("shell");
+            for (String a : shellArgs) cmd.add(a);
+            Process p = new ProcessBuilder(cmd).redirectErrorStream(true).start();
+            String out = new String(p.getInputStream().readAllBytes());
+            p.waitFor();
+            return out;
+        } catch (Exception e) {
+            System.out.println("⚠ adb shell failed: " + e.getMessage());
+            return "";
+        }
+    }
+
+    private void adbTap(int x, int y) {
+        adbShell("input", "tap", String.valueOf(x), String.valueOf(y));
+    }
+
+    private void adbBack() {
+        adbShell("input", "keyevent", "4");
+    }
+
+    /** Kích thước màn qua {@code wm size} ("Physical size: WxH") — không cần instrumentation. */
+    private int[] adbScreenSize() {
+        String out = adbShell("wm", "size");
+        try {
+            java.util.regex.Matcher m =
+                    java.util.regex.Pattern.compile("(\\d+)x(\\d+)").matcher(out);
+            if (m.find()) {
+                return new int[]{Integer.parseInt(m.group(1)), Integer.parseInt(m.group(2))};
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    /** Package foreground qua {@code dumpsys activity activities} (ADB) — survive crash. */
+    private String currentPackageSafe() {
+        String out = adbShell("dumpsys", "activity", "activities");
+        try {
+            java.util.regex.Matcher m = java.util.regex.Pattern
+                    .compile("topResumedActivity=\\S+ \\S+ ([\\w.]+)/").matcher(out);
+            if (m.find()) return m.group(1);
+        } catch (Exception ignored) {}
+        return null;
     }
 
     /**

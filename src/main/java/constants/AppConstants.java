@@ -14,7 +14,7 @@ public class AppConstants {
     public static final String PLATFORM_NAME = "Android";
     public static final String PLATFORM_VERSION = "14";
     public static final String DEVICE_NAME = "Oppo Pad Neo";
-    public static final String UDID = "";
+    public static final String UDID = "VSO7UO6DINEQBQPF";
 
     // Automation
     public static final String AUTOMATION_NAME = "UiAutomator2";
