@@ -9,7 +9,6 @@ import org.openqa.selenium.Dimension;
 import org.openqa.selenium.Rectangle;
 import org.openqa.selenium.WebElement;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -156,70 +155,130 @@ public class AdHelper {
         }
 
         System.out.println("🔎 Detected ad activity: " + type);
-        // Ưu tiên ĐÓNG ad in-place để LỘ home đã load sẵn (vào được màn chính thật),
-        // chỉ restart khi không đóng nổi (instrumentation crash).
-        dismissAdReachHome(30_000);
+        // Đóng ad IN-PLACE bằng ADB tap (idle-safe). Lý do thực nghiệm trên Oppo Pad Neo:
+        // home là canvas Flutter KHÔNG BAO GIỜ idle → "adb uiautomator dump" báo
+        // "could not get idle state" và findElements (qua instrumentation) lúc được lúc
+        // không. ADB "input tap" đi thẳng qua adb nên không cần idle → tin cậy. Tap đóng
+        // ad giữ home đã load sẵn (KHÔNG restart — restart đẩy app về splash khiến dialog
+        // Update hiện SAU khi DialogHelper đã chạy → home bị dialog che → test fail).
+        if (!closeAdInPlaceByAdbTap(30_000)) {
+            System.out.println("⚠ Không đóng được ad in-place → last resort restart");
+            restartToMainActivity();
+        }
     }
 
     /**
-     * Đóng ad để VÀO ĐƯỢC HOME THẬT — ưu tiên không restart.
+     * Đóng ad full-screen bằng ADB {@code input tap} vào nút Close — KHÔNG qua Appium
+     * findElements. Google interstitial của app này đặt nút Close (content-desc="Close")
+     * ở GÓC TRÊN-PHẢI (đo thực tế ~0.945w, 0.039h trên Oppo Pad Neo 1720×2408). Tap góc
+     * phải TRƯỚC vì phần còn lại của ad là vùng click-to-install → tap nhầm sẽ redirect
+     * Play Store. Sau mỗi tap, nếu văng ra app khác thì BACK (ADB) kéo về.
      *
-     * <p>Quan trọng: ad interstitial render ĐÈ LÊN home đã load sẵn. Nên chỉ cần đóng
-     * ad là home lộ ra ngay (in-place). Nếu restart (startActivity) thì app chạy lại
-     * splash "Getting ready…" → không vào thẳng home.
-     *
-     * <p>Đóng kiểu nào tuỳ máy:
-     * <ul>
-     *   <li><b>UI đọc được</b> (vd Pixel 3 — instrumentation KHÔNG crash): tìm nút đóng
-     *       bằng locator ({@code dismiss-button}/Close/Đóng/Skip) rồi click → lộ home.
-     *       Vị trí nút bất kỳ (góc trên/dưới) đều đúng vì click theo element thật.</li>
-     *   <li><b>Instrumentation CRASH</b> (vd Oppo + ad video WebView): findElements vô dụng/
-     *       treo → phát hiện bằng {@code getWindowSize()} fail nhanh → restart (chấp nhận splash).</li>
-     * </ul>
+     * @return true nếu đã rời ad activity (giữ nguyên màn, home lộ ra); false nếu hết giờ
      */
-    private boolean dismissAdReachHome(long maxWaitMs) {
-        // Tắt implicit wait để findElements trả về NGAY (không chờ 5s × nhiều locator).
-        Duration prevWait = null;
-        try {
-            prevWait = driver.manage().timeouts().getImplicitWaitTimeout();
-            driver.manage().timeouts().implicitlyWait(Duration.ZERO);
-        } catch (Exception ignored) {}
+    private boolean closeAdInPlaceByAdbTap(long maxWaitMs) {
+        int[] sz = adbScreenSize();
+        if (sz == null) {
+            System.out.println("⚠ Không lấy được screen size qua ADB → không tap đóng ad được");
+            return false;
+        }
+        int w = sz[0], h = sz[1];
+        // Nút đóng của Google interstitial luôn ở GÓC TRÊN-PHẢI (đo thực tế 2 creative:
+        // "Close" ~0.945w×0.039h và "Đóng" ~0.91w×0.045h). Vùng này CHỈ chứa nút đóng,
+        // không có content → tap an toàn (không redirect). Tap cả vài điểm cho chắc.
+        int[][] topRightCorners = {
+                {(int) (w * 0.91),  (int) (h * 0.045)},  // "Đóng" (game-install creative)
+                {(int) (w * 0.945), (int) (h * 0.039)},  // "Close" (creative khác)
+                {(int) (w * 0.95),  (int) (h * 0.05)},
+                {(int) (w * 0.97),  (int) (h * 0.03)},
+        };
+        System.out.println("🎯 Đóng ad IN-PLACE: dump tìm nút Close + tap góc trên-phải (idle-safe, không restart)");
+        long deadline = System.currentTimeMillis() + maxWaitMs;
+        while (System.currentTimeMillis() < deadline) {
+            if (detectByCurrentActivity() == AdType.NONE) {
+                System.out.println("✅ Đã đóng ad, vào HOME (giữ state, không restart)");
+                return true;
+            }
+            // App tự drift ra launcher giữa chừng (ad redirect / app-open ad) → kéo lại.
+            String pkg = currentPackageSafe();
+            if (pkg != null && !pkg.isEmpty() && !pkg.equals(appPackage)) {
+                System.out.println("⚠ Foreground = " + pkg + " (không phải app) → BACK rồi startActivity kéo về");
+                adbBack();
+                sleep(800);
+                if (!appPackage.equals(currentPackageSafe())) startMainActivity();
+                sleep(1200);
+                continue;
+            }
 
-        try {
-            long deadline = System.currentTimeMillis() + maxWaitMs;
-            while (System.currentTimeMillis() < deadline) {
+            // (1) Dump UI (ad screen idle → dump được) tìm ĐÚNG nút Close có nhãn rồi tap center.
+            int[] close = findCloseButtonCenterViaDump();
+            if (close != null) {
+                adbTap(close[0], close[1]);
+                sleep(900);
                 if (detectByCurrentActivity() == AdType.NONE) {
-                    System.out.println("✅ Đã vào home (ad đã đóng, không restart)");
+                    System.out.println("🛑 Đóng ad qua nút Close (dump) tại (" + close[0] + "," + close[1] + ") — vào HOME");
                     return true;
                 }
-                // Probe instrumentation: getWindowSize fail nhanh nếu đã crash.
-                boolean alive;
-                try { driver.manage().window().getSize(); alive = true; }
-                catch (Exception e) { alive = false; }
-
-                if (!alive) {
-                    System.out.println("⚠ Instrumentation crash → không đóng in-place được → restart");
-                    return restartToMainActivity();
-                }
-
-                // Instrumentation sống → click nút đóng (lộ home, GIỮ in-place).
-                if (clickFirst(googleCloseLocators()) || clickFirst(xOrSkipLocators())) {
-                    sleep(1000);
-                    if (detectByCurrentActivity() == AdType.NONE) {
-                        System.out.println("🛑 Đóng ad bằng locator → vào HOME THẬT (không restart)");
-                        return true;
-                    }
-                }
-                sleep(800);  // nút đóng có thể chưa hiện (countdown) → chờ rồi thử lại
             }
-            System.out.println("⚠ Không đóng được ad trong " + (maxWaitMs / 1000) + "s → restart");
-            return restartToMainActivity();
-        } finally {
-            // Khôi phục implicit wait
-            try {
-                if (prevWait != null) driver.manage().timeouts().implicitlyWait(prevWait);
-            } catch (Exception ignored) {}
+            // (2) Nhiều creative KHÔNG expose nút đóng vào tree (WebView rỗng) → tap toạ độ
+            // góc trên-phải. Nút đóng chỉ hiện sau countdown; tap sớm thì vô hại (vùng trống)
+            // nên cứ tap mỗi vòng tới khi nó render.
+            for (int[] c : topRightCorners) {
+                adbTap(c[0], c[1]);
+                sleep(700);
+                if (detectByCurrentActivity() == AdType.NONE) {
+                    System.out.println("🛑 Đóng ad qua góc trên-phải (" + c[0] + "," + c[1] + ") — vào HOME");
+                    return true;
+                }
+            }
+            sleep(800);  // chờ countdown rồi thử lại
         }
+        System.out.println("⚠ Không đóng được ad qua ADB tap trong " + (maxWaitMs / 1000) + "s");
+        return detectByCurrentActivity() == AdType.NONE;
+    }
+
+    /**
+     * Dump UI hierarchy qua ADB ({@code uiautomator dump} rồi {@code cat}) và tìm nút
+     * đóng ad — trả về center (x,y) để tap qua ADB. Màn ad (WebView Google interstitial)
+     * idle nên dump được; home Flutter thì KHÔNG (đó là lý do chỉ dùng cho ad screen).
+     *
+     * <p>Nhận diện nút Close: node {@code clickable="true"} có content-desc khớp
+     * close/skip/dismiss/X (đa ngôn ngữ). Ưu tiên node nằm nửa trên màn hình (Google
+     * đặt Close ở góc trên) để tránh chọn nhầm nút "Cài đặt/Install" ở dưới.
+     *
+     * @return {x,y} center của nút Close, hoặc null nếu chưa dump ra (countdown chưa xong)
+     */
+    private int[] findCloseButtonCenterViaDump() {
+        String xml = adbDumpUi();
+        if (xml == null || xml.isEmpty()) return null;
+        java.util.regex.Pattern descP = java.util.regex.Pattern.compile("content-desc=\"([^\"]*)\"");
+        java.util.regex.Pattern boundsP =
+                java.util.regex.Pattern.compile("bounds=\"\\[(\\d+),(\\d+)\\]\\[(\\d+),(\\d+)\\]\"");
+        int[] sz = adbScreenSize();
+        int screenH = (sz != null) ? sz[1] : Integer.MAX_VALUE;
+        int[] topCandidate = null;
+        for (String node : xml.split("<node")) {
+            if (!node.contains("clickable=\"true\"")) continue;
+            java.util.regex.Matcher dm = descP.matcher(node);
+            String desc = dm.find() ? dm.group(1) : "";
+            if (!desc.matches("(?i)(close|close ad|close advertisement|dismiss|skip|skip ad"
+                    + "|đóng|đóng quảng cáo|bỏ qua|x|✕|✖|×)")) continue;
+            java.util.regex.Matcher bm = boundsP.matcher(node);
+            if (!bm.find()) continue;
+            int x1 = Integer.parseInt(bm.group(1)), y1 = Integer.parseInt(bm.group(2));
+            int x2 = Integer.parseInt(bm.group(3)), y2 = Integer.parseInt(bm.group(4));
+            int cx = (x1 + x2) / 2, cy = (y1 + y2) / 2;
+            // Ưu tiên nút ở nửa trên (Close thật). Nút dưới (Install) bỏ qua nếu có nút trên.
+            if (cy < screenH / 2) return new int[]{cx, cy};
+            if (topCandidate == null) topCandidate = new int[]{cx, cy};
+        }
+        return topCandidate;
+    }
+
+    /** Dump UI ra file trên device rồi cat về (cả 2 đều qua adb shell — idle-safe cho ad). */
+    private String adbDumpUi() {
+        adbShell("uiautomator", "dump", "/sdcard/adh_dump.xml");
+        return adbShell("cat", "/sdcard/adh_dump.xml");
     }
 
     private AdType waitAndDetectAdType(long waitMs) {

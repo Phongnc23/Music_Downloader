@@ -6,7 +6,10 @@ package constants;
 public class TimeOutConstants {
 
     // Driver session
-    public static final int NEW_COMMAND_TIMEOUT = 120;
+    // 300s: bypass quang cao co the mat ~100s+ (Google interstitial co countdown dai
+    // truoc khi nut Close co tac dung) — newCommandTimeout phai du lon de session khong
+    // bi het han giua luc dang xu ly ad.
+    public static final int NEW_COMMAND_TIMEOUT = 300;
     public static final int IMPLICIT_WAIT = 5;
 
     // Smart wait (explicit wait - WebDriverWait)

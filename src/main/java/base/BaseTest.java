@@ -4,6 +4,7 @@ import constants.AppConstants;
 import driver.DriverFactory;
 import driver.DriverManager;
 import helpers.AdHelper;
+import helpers.DialogHelper;
 import io.appium.java_client.AppiumDriver;
 import io.appium.java_client.android.AndroidDriver;
 import org.apache.logging.log4j.LogManager;
@@ -25,19 +26,46 @@ public class BaseTest {
         logger.info("========== SETUP TEST CLASS ==========");
         driver = DriverFactory.createDriver();
         DriverManager.setDriver(driver);
-        logger.info("App da launch: " + AppConstants.APP_PACKAGE);
+
+        // Force COLD START: terminate roi activate lai de quang cao interstitial fire
+        // on dinh moi lan chay. Neu app dang o trang thai warm (van mo o home tu lan
+        // truoc) thi Appium chi resume -> ad khong hien -> flow bypass khong deterministic.
+        try {
+            ((AndroidDriver) driver).terminateApp(AppConstants.APP_PACKAGE);
+            ((AndroidDriver) driver).activateApp(AppConstants.APP_PACKAGE);
+        } catch (Exception e) {
+            logger.warn("Cold start relaunch loi: " + e.getMessage());
+        }
+        logger.info("App da launch (cold start): " + AppConstants.APP_PACKAGE);
     }
 
+    /**
+     * Truoc moi test:
+     *   1. Dismiss quang cao (AdHelper)
+     *   2. Dismiss dialog Update neu co (DialogHelper)
+     */
     @BeforeMethod(alwaysRun = true)
     public void handleAdBeforeTest() {
+        // Step 1: Tat quang cao
+        long t0 = System.currentTimeMillis();
         try {
             new AdHelper((AndroidDriver) driver).dismissAllAds();
         } catch (Exception e) {
-            // In ra stdout (khong co log4j config nen logger.warn bi nuot) de thay
-            // exception that su lam dismiss ad that bai.
-            System.out.println("❌ Loi xu ly quang cao: " + e);
+            logger.warn("Loi xu ly quang cao: " + e);
             e.printStackTrace(System.out);
         }
+        long t1 = System.currentTimeMillis();
+        logger.info("[TIMING] dismissAllAds: " + (t1 - t0) + "ms");
+
+        // Step 2: Tat dialog Update/Welcome xuat hien sau khi quang cao bien
+        try {
+            new DialogHelper((AndroidDriver) driver).dismissDialog();
+        } catch (Exception e) {
+            logger.warn("Loi xu ly dialog: " + e);
+            e.printStackTrace(System.out);
+        }
+        long t2 = System.currentTimeMillis();
+        logger.info("[TIMING] dismissDialog: " + (t2 - t1) + "ms");
     }
 
     @AfterMethod(alwaysRun = true)
@@ -53,12 +81,16 @@ public class BaseTest {
     public void tearDown() {
         logger.info("========== TEARDOWN ==========");
         if (driver != null) {
+            long t0 = System.currentTimeMillis();
             try {
                 ((AndroidDriver) driver).terminateApp(AppConstants.APP_PACKAGE);
             } catch (Exception e) {
                 logger.warn("Loi terminate: " + e.getMessage());
             }
+            long t1 = System.currentTimeMillis();
+            logger.info("[TIMING] terminateApp: " + (t1 - t0) + "ms");
             driver.quit();
+            logger.info("[TIMING] driver.quit: " + (System.currentTimeMillis() - t1) + "ms");
             DriverManager.removeDriver();
         }
         ExtentReportManager.flush();
