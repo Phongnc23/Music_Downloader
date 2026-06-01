@@ -6,6 +6,7 @@ import io.appium.java_client.android.AndroidDriver;
 import org.openqa.selenium.By;
 import org.openqa.selenium.WebElement;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,25 +39,41 @@ public class DialogHelper {
      * Cho dialog xuat hien (toi da INITIAL_WAIT_MS), neu co thi dong.
      */
     public void dismissDialog() {
-        if (!waitForDialog(INITIAL_WAIT_MS)) {
-            System.out.println("✅ No dialog detected");
-            return;
-        }
+        // Tat implicit wait: isDialogShowing()/dialogCloseLocators() goi RAT NHIEU
+        // findElements cho locator KHONG ton tai. Voi implicit wait mac dinh (5s) moi
+        // findElements vang mat cho het 5s -> dismissDialog co the mat ~80s tren Flutter
+        // home (= "vao home roi dung lau moi quit"). Voi ZERO, findElements tra ve NGAY.
+        Duration prevWait = null;
+        try {
+            prevWait = driver.manage().timeouts().getImplicitWaitTimeout();
+            driver.manage().timeouts().implicitlyWait(Duration.ZERO);
+        } catch (Exception ignored) {}
 
-        System.out.println("📣 Dialog detected - trying to close");
-
-        if (clickFirst(dialogCloseLocators())) {
-            sleep(ACTION_DELAY_MS);
-            // Verify dialog da dong
-            if (!isDialogShowing()) {
-                System.out.println("📕 Dialog closed successfully");
-            } else {
-                System.out.println("⚠ Dialog still showing - retry once");
-                clickFirst(dialogCloseLocators());
-                sleep(ACTION_DELAY_MS);
+        try {
+            if (!waitForDialog(INITIAL_WAIT_MS)) {
+                System.out.println("✅ No dialog detected");
+                return;
             }
-        } else {
-            System.out.println("⚠ Could not find close locator for this dialog");
+
+            System.out.println("📣 Dialog detected - trying to close");
+
+            if (clickFirst(dialogCloseLocators())) {
+                sleep(ACTION_DELAY_MS);
+                // Verify dialog da dong
+                if (!isDialogShowing()) {
+                    System.out.println("📕 Dialog closed successfully");
+                } else {
+                    System.out.println("⚠ Dialog still showing - retry once");
+                    clickFirst(dialogCloseLocators());
+                    sleep(ACTION_DELAY_MS);
+                }
+            } else {
+                System.out.println("⚠ Could not find close locator for this dialog");
+            }
+        } finally {
+            try {
+                if (prevWait != null) driver.manage().timeouts().implicitlyWait(prevWait);
+            } catch (Exception ignored) {}
         }
     }
 

@@ -81,6 +81,13 @@ public class BaseTest {
     public void tearDown() {
         logger.info("========== TEARDOWN ==========");
         if (driver != null) {
+            // Da vao home (test xong) -> cho 2s roi dong app luon (theo yeu cau: xem
+            // home 2s roi quit). Khong xu ly gi them, chi delay ngan cho de quan sat.
+            try {
+                Thread.sleep(2_000);
+            } catch (InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }
             long t0 = System.currentTimeMillis();
             try {
                 ((AndroidDriver) driver).terminateApp(AppConstants.APP_PACKAGE);

@@ -161,7 +161,7 @@ public class AdHelper {
         // không. ADB "input tap" đi thẳng qua adb nên không cần idle → tin cậy. Tap đóng
         // ad giữ home đã load sẵn (KHÔNG restart — restart đẩy app về splash khiến dialog
         // Update hiện SAU khi DialogHelper đã chạy → home bị dialog che → test fail).
-        if (!closeAdInPlaceByAdbTap(30_000)) {
+        if (!closeAdInPlaceByAdbTap(45_000)) {
             System.out.println("⚠ Không đóng được ad in-place → last resort restart");
             restartToMainActivity();
         }
@@ -177,64 +177,52 @@ public class AdHelper {
      * @return true nếu đã rời ad activity (giữ nguyên màn, home lộ ra); false nếu hết giờ
      */
     private boolean closeAdInPlaceByAdbTap(long maxWaitMs) {
-        int[] sz = adbScreenSize();
-        if (sz == null) {
-            System.out.println("⚠ Không lấy được screen size qua ADB → không tap đóng ad được");
+        if (adbScreenSize() == null) {
+            System.out.println("⚠ Không gọi được ADB (wm size) → không đóng ad được");
             return false;
         }
-        int w = sz[0], h = sz[1];
-        // Nút đóng của Google interstitial luôn ở GÓC TRÊN-PHẢI (đo thực tế 2 creative:
-        // "Close" ~0.945w×0.039h và "Đóng" ~0.91w×0.045h). Vùng này CHỈ chứa nút đóng,
-        // không có content → tap an toàn (không redirect). Tap cả vài điểm cho chắc.
-        int[][] topRightCorners = {
-                {(int) (w * 0.91),  (int) (h * 0.045)},  // "Đóng" (game-install creative)
-                {(int) (w * 0.945), (int) (h * 0.039)},  // "Close" (creative khác)
-                {(int) (w * 0.95),  (int) (h * 0.05)},
-                {(int) (w * 0.97),  (int) (h * 0.03)},
-        };
-        System.out.println("🎯 Đóng ad IN-PLACE: dump tìm nút Close + tap góc trên-phải (idle-safe, không restart)");
+        System.out.println("🎯 Đóng ad IN-PLACE: dump tìm nút Close + ADB BACK (an toàn, không click content → không redirect Play Store)");
         long deadline = System.currentTimeMillis() + maxWaitMs;
         while (System.currentTimeMillis() < deadline) {
-            if (detectByCurrentActivity() == AdType.NONE) {
-                System.out.println("✅ Đã đóng ad, vào HOME (giữ state, không restart)");
-                return true;
-            }
-            // App tự drift ra launcher giữa chừng (ad redirect / app-open ad) → kéo lại.
+            // (0) RECOVER nếu bị redirect ra app khác (Play Store / game do ad mở) hoặc launcher.
+            //     Check TRƯỚC khi kết luận "vào home" — vì rời AdActivity sang app khác cũng làm
+            //     detectByCurrentActivity()==NONE (dễ nhầm là đã về home).
             String pkg = currentPackageSafe();
             if (pkg != null && !pkg.isEmpty() && !pkg.equals(appPackage)) {
-                System.out.println("⚠ Foreground = " + pkg + " (không phải app) → BACK rồi startActivity kéo về");
+                System.out.println("⚠ Foreground = " + pkg + " (ad redirect / không phải app) → BACK rồi startActivity kéo về");
                 adbBack();
                 sleep(800);
                 if (!appPackage.equals(currentPackageSafe())) startMainActivity();
                 sleep(1200);
                 continue;
             }
+            // (1) Đã về HOME THẬT — đang ở ĐÚNG app mình VÀ không còn AdActivity.
+            if (detectByCurrentActivity() == AdType.NONE) {
+                System.out.println("✅ Đã đóng ad, vào HOME (giữ state, không restart)");
+                return true;
+            }
 
-            // (1) Dump UI (ad screen idle → dump được) tìm ĐÚNG nút Close có nhãn rồi tap center.
+            // (2) Nếu creative CÓ expose nút Close (content-desc) → tap CHÍNH XÁC center của nó
+            //     (an toàn tuyệt đối, không trúng content). Thường phải chờ countdown mới render
+            //     nên có thể null ở các vòng đầu → khi đó dùng BACK ở (3).
             int[] close = findCloseButtonCenterViaDump();
             if (close != null) {
                 adbTap(close[0], close[1]);
                 sleep(900);
-                if (detectByCurrentActivity() == AdType.NONE) {
-                    System.out.println("🛑 Đóng ad qua nút Close (dump) tại (" + close[0] + "," + close[1] + ") — vào HOME");
-                    return true;
-                }
+                continue;  // quay lại (0)/(1) xác nhận
             }
-            // (2) Nhiều creative KHÔNG expose nút đóng vào tree (WebView rỗng) → tap toạ độ
-            // góc trên-phải. Nút đóng chỉ hiện sau countdown; tap sớm thì vô hại (vùng trống)
-            // nên cứ tap mỗi vòng tới khi nó render.
-            for (int[] c : topRightCorners) {
-                adbTap(c[0], c[1]);
-                sleep(700);
-                if (detectByCurrentActivity() == AdType.NONE) {
-                    System.out.println("🛑 Đóng ad qua góc trên-phải (" + c[0] + "," + c[1] + ") — vào HOME");
-                    return true;
-                }
-            }
-            sleep(800);  // chờ countdown rồi thử lại
+
+            // (3) Creative KHÔNG expose nút đóng (WebView rỗng) → dùng ADB BACK để đóng.
+            //     BACK đóng Google interstitial SAU khi countdown xong (trước đó ad lờ BACK),
+            //     và KHÔNG click vào content → KHÔNG bị redirect Play Store/game (khác hẳn tap
+            //     toạ độ mù trước đây hay trúng vùng install). Thực nghiệm: ~6 BACK (~15-18s).
+            adbBack();
+            sleep(2_000);  // chờ countdown tick + ad xử lý BACK rồi kiểm tra lại
         }
-        System.out.println("⚠ Không đóng được ad qua ADB tap trong " + (maxWaitMs / 1000) + "s");
-        return detectByCurrentActivity() == AdType.NONE;
+        System.out.println("⚠ Không đóng được ad in-place trong " + (maxWaitMs / 1000) + "s");
+        // Chỉ coi là thành công khi ĐANG Ở ĐÚNG APP MÌNH và không còn ad (tránh false-positive
+        // khi đang kẹt ở app khác do ad redirect).
+        return appPackage.equals(currentPackageSafe()) && detectByCurrentActivity() == AdType.NONE;
     }
 
     /**
