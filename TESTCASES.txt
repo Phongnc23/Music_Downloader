@@ -1,0 +1,402 @@
+================================================================================
+DANH SACH TESTCASE - Music Downloader Automation
+Tong: 255 testcase | 8 chuc nang | 47 file
+Cap nhat: 2026-06-10
+================================================================================
+
+
+================================================================
+1. HOME  (30 case)
+================================================================
+[Home01_Verify_App_Launched]
+  TC_01: Verify app launch va bypass quang cao thanh cong
+
+[Home02_Verify_Bypass_Ad_After_Interaction]
+  TC_02: Tu dong bypass quang cao bung giua phien va chay tiep
+
+[Home03_Verify_UI_Display]
+  TC_HOME_01: Verify Home title hien thi
+  TC_HOME_02: Verify hamburger menu icon hien thi
+  TC_HOME_03: Verify search icon hien thi
+  TC_HOME_04: Verify search bar hien thi voi placeholder
+  TC_HOME_05: Verify 4 Quick Action buttons hien thi
+  TC_HOME_06: Verify Mini Player hien thi
+  TC_HOME_07: Verify Bottom Navigation hien thi 5 tabs
+  TC_HOME_08: Verify Home screen tong the
+
+[Home04_Verify_Quick_Actions]
+  TC_HOME_09: Click search bar mo search screen
+  TC_HOME_10: Click search icon (top-right)
+  TC_HOME_11: Click Downloaded button
+  TC_HOME_12: Click Sleep timer button
+  TC_HOME_13: Click Rate us button
+  TC_HOME_14: Click Settings button
+  TC_HOME_15: Click hamburger menu mo va dong drawer
+
+[Home05_Verify_Bottom_Nav_And_Mini_Player]
+  TC_HOME_16: Verify mini player co thong tin track
+  TC_HOME_17: Click play/pause trong mini player
+  TC_HOME_18: Click queue button trong mini player
+  TC_HOME_19: Click mini player mo full player
+  TC_HOME_20: Click Tracks tab
+  TC_HOME_21: Click Artists tab
+  TC_HOME_22: Click Albums tab
+  TC_HOME_23: Click Playlists tab
+  TC_HOME_24: Click Home tab khi dang o Home
+  TC_HOME_25: Quay ve Home tu tab khac
+
+[Home06_Verify_Exit_Dialog]
+  TC_HOME_26: Nhan BACK o Home -> bung dialog xac nhan thoat
+  TC_HOME_27: Bam Cancel tren exit dialog -> o lai Home
+  TC_HOME_28: Bam Exit tren exit dialog -> thoat app
+
+
+================================================================
+2. SEARCH (online download)  (17 case)
+================================================================
+[Search01_Verify_Navigation]
+  - Click search bar -> navigate sang Search screen
+  - Vao Search -> ban phim hien de nhap
+  - Click search icon (top-right) -> navigate sang Search screen
+  - BACK tu Search -> an ban phim roi ve Home
+
+[Search02_Verify_Input_And_Suggestions]
+  - Go ky tu -> danh sach suggestions hien
+  - Suggestions cap nhat theo tung ky tu nhap them
+  - Click icon push trong suggestion -> fill textbox, KHONG search
+  - Clear textbox -> noi dung bi xoa
+  - Query rong -> khong trigger search
+  - Click text suggestion -> trigger search ra results
+
+[Search03_Verify_Results_And_Download]
+  - Search query hop le -> co results
+  - Result list hien thi nhieu tracks (>=3)
+  - Moi result co title + info (title \n creator/duration)
+  - Search query chua ky tu dac biet -> khong crash
+  - Search query khong co ket qua -> empty state, khong crash
+  - Click download tren 1 track -> kich hoat tai, khong crash
+
+[Search04_Verify_E2E_Download_And_Verify]
+  - E2E happy path: Search -> download 2 tracks -> back ve Home -> verify ca 2
+
+
+================================================================
+3. MENU (drawer)  (26 case)
+================================================================
+[Menu01_Verify_Drawer_Display]
+  TC_MENU_01: Drawer mo va hien thi day du
+  TC_MENU_02: Header hien thi (App name + Tagline)
+  TC_MENU_03: 9 menu items hien thi day du
+  TC_MENU_04: Version hien thi voi so 9999
+
+[Menu02_Verify_Item_Navigation]
+  TC_MENU_05: Click Equalizer -> mo Android Dolby Atmos settings
+  TC_MENU_06: Click Downloaded -> mo Downloaded screen trong app
+  TC_MENU_07: Click Privacy policy
+  TC_MENU_08: Click Rate us -> mo dialog hoac Play Store
+  TC_MENU_09: Click Share app -> mo Android share sheet
+  TC_MENU_10: Click Settings -> mo Settings screen trong app
+  TC_MENU_10b: Click Version -> quay ve Home
+
+[Menu03_Verify_Sleep_Timer]
+  TC_MENU_11: Dialog mo voi INITIAL state - 6 options + 'Set timer' button
+  TC_MENU_12: Click Cancel o INITIAL state -> dong dialog
+  TC_MENU_13: Chon 15 mins + Set timer -> dialog dong, timer duoc set
+  TC_MENU_14: ACTIVE state hien countdown 'Timer: Xm Ys' + Reset button
+  TC_MENU_15: Click Reset o ACTIVE -> dialog VAN MO, ve INITIAL
+  TC_MENU_16: Click Custom -> mo Custom sleep timer dialog
+  TC_MENU_17: Click Cancel trong Custom dialog -> dong Custom, ve Sleep timer dialog initial
+  TC_MENU_18: Nhap '25' + Done -> ca 2 dialog dong, custom timer duoc set
+  TC_MENU_19: Nhap so phut khac (vd: 5) + Done -> set duoc custom value nho
+
+[Menu04_Verify_Settings_Screen]
+  TC_MENU_15: Settings co Download Folder voi path
+  TC_MENU_16: Languages hien thi voi value 'Device'
+  TC_MENU_17: Settings co day du 6 items
+  TC_MENU_18: Click Back -> quay ve Home
+
+[Menu05_Verify_Exit_Flow]
+  TC_MENU_19: Click Exit app -> hien Exit confirmation dialog
+  TC_MENU_20: Click Cancel trong Exit dialog -> dialog dong, app van mo
+
+
+================================================================
+4. TRACKS  (67 case)
+================================================================
+[Tracks01_Verify_UI_Display]
+  TC_TRACKS_001: Header + top controls + bottom nav hien thi day du
+  TC_TRACKS_002: Track list - co items, moi item co title + duration M:SS + co title truncate
+  TC_TRACKS_003: Mini player hien sau khi Play all
+
+[Tracks02_Verify_Sort]
+  TC_TRACKS_004: Sort dialog mo - co 7 options + default 'Date modified'
+  TC_TRACKS_005: Dong Sort dialog bang X / Scrim / BACK
+  TC_TRACKS_006: Sort indicator chuyen vi tri khi doi option
+  TC_TRACKS_007: Sort by Title - ASC (reorder) + DESC (toggle dao)
+  TC_TRACKS_008: Sort by Artist - ASC + DESC (toggle)
+  TC_TRACKS_009: Sort by Album - ASC + DESC (toggle dao)
+  TC_TRACKS_010: Sort by File name - ASC + DESC (toggle dao)
+  TC_TRACKS_011: Sort by Duration - ASC (reorder) + DESC (toggle dao)
+  TC_TRACKS_012: Sort by Date added - ASC + DESC (toggle dao)
+  TC_TRACKS_013: Sort by Date modified - ASC + DESC (toggle dao)
+  TC_TRACKS_014: Doi sort - Title vs Duration list order khac nhau
+
+[Tracks03_Verify_Play_Controls]
+  TC_TRACKS_015: Play all - phat bai[0] + mini player; Play all thay bai dang phat
+  TC_TRACKS_016: Play all sau sort Duration - mini player phat
+  TC_TRACKS_017: Shuffle - phat random, lap 5 lan deu phat
+  TC_TRACKS_018: Play all <-> Shuffle doi bai dang phat
+  TC_TRACKS_019: Click track - phat + mini (KHONG mo Play Now); click bai khac -> mini update; click lai bai dang phat khong restart
+  TC_TRACKS_020: Long press track -> mo Select mode (KHONG Play Now)
+  TC_TRACKS_021: Scroll list - khong roi Tracks, bai van phat
+  TC_TRACKS_022: Mini player play/pause toggle
+  TC_TRACKS_023: Mini player co content + progress % tang theo thoi gian
+  TC_TRACKS_024: Mini player body -> mo Play Now; Back -> ve Tracks, bai van phat
+  TC_TRACKS_025: Mini player queue icon -> mo Playing Queue
+
+[Tracks04_Verify_Edit_Sheet]
+  TC_TRACKS_026: Edit sheet mo + co day du 7 actions
+  TC_TRACKS_027: Dong sheet bang Scrim / BACK / Swipe down
+  TC_TRACKS_028: Sheet hien dung track duoc chon (track[2])
+  TC_TRACKS_029: Add to playlist - mo dialog co My Favorite
+  TC_TRACKS_030: Rename - dialog mo voi text prefilled + char count
+  TC_TRACKS_031: File info - screen mo voi day du fields
+  TC_TRACKS_032: Delete - confirm dialog mo + message chua ten track (KHONG xoa)
+  TC_TRACKS_033: Heart toggle (add/remove favorite)
+  TC_TRACKS_034: Create new playlist - dialog mo + CANCEL khong tao + SAVE tao moi
+
+[Tracks05_Verify_Edit_Actions]
+  TC_TRACKS_035: Rename CANCEL -> title KHONG doi
+  TC_TRACKS_036: Rename dialog - clear input + char count realtime + nhap >60 ky tu
+  TC_TRACKS_037: Rename SAVE input rong - validation (chan / title khong doi)
+  TC_TRACKS_038: Rename SAVE -> title moi xuat hien trong list
+  TC_TRACKS_039: Rename voi tieng Viet + ky tu dac biet
+  TC_TRACKS_040: Add to My Favorite (lap 2 lan - moi lan sheet dong)
+  TC_TRACKS_041: File info - verify tat ca fields co value
+  TC_TRACKS_042: Add to playing queue - tong queue tang 1
+  TC_TRACKS_043: Add 3 bai vao queue - tong tang
+  TC_TRACKS_044: Add bai da co trong queue (duplicate) - khong crash
+  TC_TRACKS_045: Edit > Play - phat bai + thay bai dang phat + play lai chinh bai
+  TC_TRACKS_046: Share - mo Android resolver + co file preview/targets
+  TC_TRACKS_047: Delete CANCEL -> count khong doi
+  TC_TRACKS_048: Delete THAT (DESTRUCTIVE) - so track giam
+
+[Tracks06_Verify_Player_Screens]
+  TC_TRACKS_049: Play Now layout + SeekBar + current/total time + total duration M:SS
+  TC_TRACKS_050: Controls toggle - Play/Pause + Shuffle + Repeat (3 states) + Heart
+  TC_TRACKS_051: Next button - chuyen bai sau
+  TC_TRACKS_052: Previous button - reset playback
+  TC_TRACKS_053: SeekBar - drag + tap nhay vi tri
+  TC_TRACKS_054: Add to playlist icon -> mo dialog
+  TC_TRACKS_055: Equalizer icon -> mo equalizer (system/in-app)
+  TC_TRACKS_056: Sleep timer icon -> mo sleep timer dialog
+  TC_TRACKS_057: 3-dot menu -> mo edit sheet
+  TC_TRACKS_058: Queue icon -> Playing Queue (layout + count + click item phat)
+  TC_TRACKS_059: Down arrow/Back -> dong Play Now, bai van phat
+
+[Tracks07_Verify_Queue_Advanced]
+  TC_TRACKS_060: Playing Queue - vi tri bai dang phat + header Shuffle/Repeat toggle + mini player
+  TC_TRACKS_061: Remove from queue - count giam 1
+  TC_TRACKS_062: Clear queue (trash) - DESTRUCTIVE
+
+[Tracks08_Verify_Select_Mode]
+  TC_TRACKS_063: Select mode - 4 actions + label + chon them item tang count + select all
+  TC_TRACKS_064: Thoat select mode -> ve Tracks
+  TC_TRACKS_065: Select + Add to queue
+  TC_TRACKS_066: Select + Delete file (DESTRUCTIVE) - so track giam
+  TC_TRACKS_067: Select Delete -> popup HE THONG xin quyen (Allow/Deny) + Deny huy
+
+
+================================================================
+5. ARTISTS  (46 case)
+================================================================
+[Artists01_Verify_UI_Display]
+  TC_ARTISTS_01: Header co title 'Artists' + sort button
+  TC_ARTISTS_02: Count 'N artists' hien thi
+  TC_ARTISTS_03: Artist card co name + track count
+  TC_ARTISTS_04: Unknown artist co tat ca tracks
+  TC_ARTISTS_08: Bottom nav co Artists tab
+  TC_ARTISTS_07: Mini player hien sau khi phat (qua artist edit Play)
+
+[Artists02_Verify_Navigation]
+  TC_ARTISTS_05: Click artist -> mo ArtistDetail screen
+  TC_ARTISTS_09: ArtistDetail co header + back + 3-dot
+  TC_ARTISTS_10: ArtistDetail hero co name + N songs
+  TC_ARTISTS_11: ArtistDetail co Play all + Shuffle
+  TC_ARTISTS_12: ArtistDetail co section Albums + Tracks
+  TC_ARTISTS_16: Back tu ArtistDetail -> ArtistsPage
+  TC_ARTISTS_14: Section Tracks co track items (title + artist + duration + edit)
+  TC_ARTISTS_15: Sort button tren Tracks section
+  TC_ARTISTS_18: Click track trong ArtistDetail -> phat bai (mini player), giong man Tracks
+  TC_ARTISTS_49: Track edit trong artist -> 7-action sheet (giong Tracks, khac artist 4-action)
+
+[Artists03_Verify_Edit_Sheet]
+  TC_ARTISTS_06: Click 3-dot artist -> sheet mo
+  TC_ARTISTS_19: Sheet co 4 actions (KHONG co Rename/Delete/FileInfo)
+  TC_ARTISTS_20: Sheet hien artist info (name + N songs)
+  TC_ARTISTS_21: Tap Scrim -> dong sheet
+  TC_ARTISTS_22: Press BACK -> dong sheet
+
+[Artists04_Verify_Edit_Actions]
+  TC_ARTISTS_26: Play artist -> bai dau phat, sheet dong
+  TC_ARTISTS_27: Add to playing queue artist - tat ca songs vao queue
+  TC_ARTISTS_28: Add to playlist - mo dialog
+  TC_ARTISTS_29: Add artist to My Favorite - tat ca songs vao playlist
+
+[Artists05_Verify_Share_With_Limit]
+  TC_ARTISTS_30: Share <unknown> artist (382 songs) > 10 -> FAIL
+  TC_ARTISTS_34: Share Music Download folder (31 songs) > 10 -> FAIL
+  TC_ARTISTS_35: Share VoiceChanger folder (341 songs) > 10 -> FAIL
+  TC_ARTISTS_31: Share Notifications folder (1 song) <= 10 -> SUCCESS
+  TC_ARTISTS_32: Share BrowserDownloader folder (5 songs) <= 10 -> SUCCESS
+  TC_ARTISTS_33: Share RecoveredAudios folder (4 songs) <= 10 -> SUCCESS
+  TC_ARTISTS_36: Share 1 track tu tracks list - LUON OK
+  TC_ARTISTS_37: Cancel share intent -> quay ve app
+
+[Artists06_Verify_Album_Folders]
+  TC_ARTISTS_12: Section Albums hien thi cac folder
+  TC_ARTISTS_40: Click Music Download folder -> mo screen folder
+  TC_ARTISTS_41: Folder hero co N songs
+  TC_ARTISTS_42: Play all trong folder -> bai dau folder phat
+  TC_ARTISTS_44: Tracks trong folder chi gom bai cua folder do
+  TC_ARTISTS_47: Back tu folder -> ArtistDetail
+  TC_ARTISTS_43: Shuffle trong folder -> phat random tu folder
+  TC_ARTISTS_45: Folder 3-dot menu -> edit sheet 4 actions (folder-level, share theo limit)
+  TC_ARTISTS_48: Mini player hoat dong trong folder
+
+[Artists07_Verify_Detail_Edit_Sheet]
+  TC_ARTISTS_17: Click 3-dot menu tren ArtistDetail -> edit sheet mo
+  TC_ARTISTS_23: Edit sheet detail co 4 actions (giong home, khong Rename/Delete)
+  TC_ARTISTS_24: Sheet detail hien dung artist info (name + N songs)
+  TC_ARTISTS_25: Sheet detail dong bang Scrim va BACK
+
+
+================================================================
+6. ALBUMS  (26 case)
+================================================================
+[Albums01_Verify_UI_Display]
+  TC_ALBUMS_01_03_08: Header 'Albums' + count + sort button + bottom nav (gom hien thi)
+  TC_ALBUMS_02_04: Count 'N albums' > 0 + album cards co name + track count
+  TC_ALBUMS_05: Album count khop voi displayed
+
+[Albums02_Verify_Navigation]
+  TC_ALBUMS_06: Click album -> mo AlbumDetail (name + N songs)
+  TC_ALBUMS_16_17_18_19_20: AlbumDetail UI - header/hero/play-shuffle/tracks-section/tracks (gom 1 lan navigate)
+  TC_ALBUMS_21: Back tu AlbumDetail -> AlbumsPage
+
+[Albums03_Verify_Sort]
+  TC_ALBUMS_09_10_14: Album sort dialog mo + co option Title + dong bang Scrim (gom)
+  TC_ALBUMS_11_12: Album sort Title - nhan lan 1 ASC (tren xuong), lan 2 DESC (nguoc lai)
+  TC_ALBUMS_23_24_25: In-album sort 7 options + Title doi order + click lan 2 dao nguoc (giong Tracks)
+
+[Albums04_Verify_Edit_Sheet]
+  TC_ALBUMS_33_34_35: Sheet mo + 4 actions + header (name + N songs) - gom 1 sheet
+  TC_ALBUMS_36: Tap Scrim -> dong sheet
+  TC_ALBUMS_37: Press BACK -> dong sheet, ve Albums
+  TC_ALBUMS_40: Play album -> mini player
+  TC_ALBUMS_41: Add to playing queue -> sheet dong + van o app
+  TC_ALBUMS_42: Add to playlist -> mo dialog
+
+[Albums05_Verify_Share_With_Limit]
+  TC_ALBUMS_45_38: Share Music Download (34) > 10 -> FAIL (sheet dong, van o app)
+  TC_ALBUMS_46: Share VoiceChanger (333) > 10 -> FAIL
+  TC_ALBUMS_47: Share Notifications (1) <= 10 -> SUCCESS (resolver mo)
+  TC_ALBUMS_48: Share RecoveredAudios (4) <= 10 -> SUCCESS
+  TC_ALBUMS_49: Share BrowserDownloader (5) <= 10 -> SUCCESS
+  TC_ALBUMS_50: Share single track trong album -> LUON OK
+  TC_ALBUMS_51: Cancel share intent -> ve app
+
+[Albums06_Verify_Album_Detail]
+  TC_ALBUMS_53: Play all album -> mini player / Play Now
+  TC_ALBUMS_54: Shuffle album
+  TC_ALBUMS_22: Click track trong album -> phat (mini player), giong man Tracks
+  TC_ALBUMS_55_56: AlbumDetail 3-dot = 4-action album-level; track 3-dot = 7-action (gom)
+
+
+================================================================
+7. PLAYLISTS  (22 case)
+================================================================
+[Playlists01_Verify_UI_Display]
+  TC_PL_01: Header + Local label + Create button + Bottom nav (gom)
+  TC_PL_02: Local playlists (My Favorite/Recently Played) + counts + user playlists
+
+[Playlists02_Verify_Navigation]
+  TC_PL_03: My Favorite detail (header+hero+Play/Shuffle) + Back ve list (gom)
+  TC_PL_04: Recently Played detail mo + hero
+  TC_PL_05: Play all trong detail -> thuc su PHAT (mini player)
+  TC_PL_06: Click track trong detail -> phat (giong man Tracks)
+  TC_PL_07: Empty playlist (0 tracks) -> detail mo, hero '0 tracks'
+
+[Playlists03_Verify_Create_Playlist]
+  TC_PL_08: Dialog mo + rong '0/60' + char count update + Dismiss dong (gom)
+  TC_PL_09: CANCEL -> khong tao, count khong doi
+  TC_PL_10: SAVE -> tao playlist moi (+cleanup delete)
+  TC_PL_11: SAVE voi ten rong -> validation (dialog van mo HOAC khong tao)
+
+[Playlists04_Verify_Edit_Sheets]
+  TC_PL_12: User playlist sheet = 6 actions (co Rename + Delete) (gom)
+  TC_PL_13: Tap Scrim -> dong sheet
+  TC_PL_14: Recently Played sheet = co Clear, KHONG Rename/Delete (gom)
+  TC_PL_15: My Favorite la local sheet (khong Rename/Delete)
+  TC_PL_16: Sheet 'Add to playlist' -> mo picker (Create new + danh sach)
+
+[Playlists05_Verify_Edit_Actions]
+  TC_PL_17: Rename playlist dau - dialog prefilled ten cu + CANCEL giu nguyen
+  TC_PL_18: Rename playlist dau - SAVE doi ten
+  TC_PL_19: Delete playlist dau - CANCEL -> My playlist (N) khong doi
+  TC_PL_20: Delete playlist dau - CONFIRM -> My playlist (N) giam con N-1
+  TC_PL_21: Clear recently played -> confirm dialog, CANCEL giu nguyen
+
+[Playlists06_Verify_Share_With_Limit]
+  TC_PL_22: Share My Favorite (>10) tu sheet -> blocked (sheet dong, van o app)
+
+
+================================================================
+8. SEARCH IN LIBRARY  (21 case)
+================================================================
+[SearchLibrary01_Verify_Navigation]
+  TC_SL_01: Tap search icon goc phai -> mo Search screen
+  TC_SL_02: Search screen co EditText + 5 tabs
+  TC_SL_04: Tap Back -> ve Home
+
+[SearchLibrary02_Verify_UI_Tabs]
+  TC_SL_09: Empty query -> KHONG hien thi ket qua
+  TC_SL_12: Click tab -> chuyen tab
+  TC_SL_13: 5 tabs van truy cap duoc khi co query
+
+[SearchLibrary03_Verify_Search]
+  TC_SL_14: Nhap query -> ket qua hien thi
+  TC_SL_15: Xoa query -> ket qua bien mat
+  TC_SL_16: Fuzzy search - tim gan dung (substring)
+  TC_SL_17: Exact search - tim chinh xac
+  TC_SL_19: Case insensitive search
+  TC_SL_20: No match -> 'Nothing found!'
+  TC_SL_23: Search bang so
+
+[SearchLibrary04_Verify_Tab_Filtering]
+  TC_SL_26: Tab Tracks -> chi tracks (co ' . duration')
+  TC_SL_27: Tab Albums -> chi albums ('N tracks')
+  TC_SL_29: Tab Playlists -> chi playlists
+  TC_SL_30: Cung query, doi tab -> filter lai
+  TC_SL_33: Giu query khi chuyen tab
+
+[SearchLibrary05_Verify_Result_Navigation]
+  TC_SL_34: Click track result -> phat (mini player) hoac roi search
+  TC_SL_35: Click album result -> Album detail
+  TC_SL_36: Click playlist result -> Playlist detail
+
+
+================================================================
+TONG KET THEO CHUC NANG
+================================================================
+  1. Home ............... 30 case  (6 file)
+  2. Search (online) .... 17 case  (4 file)
+  3. Menu ............... 26 case  (5 file)
+  4. Tracks ............. 67 case  (8 file)
+  5. Artists ............ 46 case  (7 file)
+  6. Albums ............. 26 case  (6 file)
+  7. Playlists .......... 22 case  (6 file)
+  8. Search In Library .. 21 case  (5 file)
+  --------------------------------------------
+  TONG ................. 255 case  (47 file)
+================================================================
