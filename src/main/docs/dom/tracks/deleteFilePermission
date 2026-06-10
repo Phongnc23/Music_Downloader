@@ -1,0 +1,17 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
+<!-- Popup HE THONG (Android scoped-storage MediaProvider) xin quyen xoa file.
+     Hien khi: edit-sheet "Delete from device" -> DELETE, HOAC select-mode "Delete file".
+     Package: com.google.android.providers.media.module / PermissionActivity
+     - Title: id/dialog_title = "Cho phep Music Downloader xoa tep am thanh nay?"
+     - Thumbnail: id/thumb_full content-desc = ten file .mp3 dang xoa
+     - "Cho phep" (Allow)  = android:id/button1  bounds [1241,1412][1415,1534]
+     - "Tu choi"  (Deny)   = android:id/button2  bounds [1093,1412][1241,1534]
+-->
+<hierarchy index="0" class="hierarchy" rotation="0" width="1720" height="2364">
+  <android.widget.FrameLayout package="com.google.android.providers.media.module" bounds="[241,849][1478,1579]">
+    <android.widget.TextView resource-id="com.google.android.providers.media.module:id/dialog_title" text="Cho phép Music Downloader xoá tệp âm thanh này?" bounds="[277,885][1442,1011]" />
+    <android.widget.ImageView resource-id="com.google.android.providers.media.module:id/thumb_full" content-desc="Cảm Ơn Người Đã Thức Cùng Tôi (154kbpsk)_1774930616483.mp3" bounds="[277,1038][1442,1376]" />
+    <android.widget.Button resource-id="android:id/button2" text="Từ chối" clickable="true" bounds="[1093,1412][1241,1534]" />
+    <android.widget.Button resource-id="android:id/button1" text="Cho phép" clickable="true" bounds="[1241,1412][1415,1534]" />
+  </android.widget.FrameLayout>
+</hierarchy>

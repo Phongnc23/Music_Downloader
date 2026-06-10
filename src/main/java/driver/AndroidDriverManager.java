@@ -31,6 +31,11 @@ public class AndroidDriverManager {
                 .setAutoGrantPermissions(true)
                 .setNewCommandTimeout(Duration.ofSeconds(TimeOutConstants.NEW_COMMAND_TIMEOUT));
 
+        // KHONG dung unicodeKeyboard/resetKeyboard: chung doi IME thiet bi sang ban phim an
+        // cua Appium, neu session crash/kill giua chung se KHONG tra lai duoc -> sau test go
+        // tay khong hien ban phim. Test chi nhap ky tu ASCII (vd "son tung") nen sendKeys
+        // mac dinh cua UiAutomator2 da du, khong can doi IME.
+
         // Capabilities cho Oppo/ColorOS
         options.setCapability("appium:ignoreHiddenApiPolicyError", true);
         options.setCapability("appium:disableWindowAnimation", true);

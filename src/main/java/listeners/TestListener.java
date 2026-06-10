@@ -23,6 +23,22 @@ public class TestListener implements ITestListener {
 
     @Override
     public void onFinish(ITestContext context) {
+        // DEDUP RETRY: neu 1 method co lan PASSED (retry thanh cong) thi bo cac ket qua FAILED cua
+        // chinh no -> Gradle/TestNG khong tinh la build fail. (RetryAnalyzer retry 1 lan moi test.)
+        java.util.Set<String> passedNames = new java.util.HashSet<>();
+        for (org.testng.ITestResult r : context.getPassedTests().getAllResults()) {
+            passedNames.add(r.getMethod().getMethodName());
+        }
+        java.util.List<org.testng.ITestResult> remove = new java.util.ArrayList<>();
+        for (org.testng.ITestResult r : context.getFailedTests().getAllResults()) {
+            if (passedNames.contains(r.getMethod().getMethodName())) {
+                remove.add(r);
+                logger.warn("DEDUP: bo FAILED (da PASS o retry): " + r.getMethod().getMethodName());
+            }
+        }
+        for (org.testng.ITestResult r : remove) {
+            context.getFailedTests().removeResult(r);
+        }
         logger.info("========== END SUITE: " + context.getName() + " ==========");
         ExtentReportManager.flush();
     }

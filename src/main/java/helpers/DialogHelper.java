@@ -77,6 +77,66 @@ public class DialogHelper {
         }
     }
 
+    /**
+     * Kiem tra NHANH (khong cho) dialog "Update app" va dong ngay neu co. Goi truoc moi test /
+     * sau khi mo lai app de tranh KET o dialog update xuat hien GIUA RUN (sau cua so 4s cua
+     * dismissDialog luc setup). Tra ve true neu da dong duoc.
+     */
+    public boolean dismissUpdateDialogIfPresent() {
+        Duration prevWait = null;
+        try {
+            prevWait = driver.manage().timeouts().getImplicitWaitTimeout();
+            driver.manage().timeouts().implicitlyWait(Duration.ZERO);
+        } catch (Exception ignored) {}
+        try {
+            if (!isUpdateDialogShowing()) return false;
+            System.out.println("📣 Update dialog (mid-run) detected - dong ngay");
+            boolean closed = clickFirst(updateCloseLocators());
+            sleep(ACTION_DELAY_MS);
+            if (closed && isUpdateDialogShowing()) {
+                clickFirst(updateCloseLocators());   // retry 1 lan
+                sleep(ACTION_DELAY_MS);
+            }
+            return closed;
+        } catch (Exception e) {
+            return false;
+        } finally {
+            try {
+                if (prevWait != null) driver.manage().timeouts().implicitlyWait(prevWait);
+            } catch (Exception ignored) {}
+        }
+    }
+
+    /** Rieng dialog "Update app" (tranh false-positive cua isDialogShowing chung). */
+    private boolean isUpdateDialogShowing() {
+        if (isPresent(AppiumBy.accessibilityId("Update app"))) return true;
+        boolean hasUpdate = isPresent(AppiumBy.accessibilityId("UPDATE"))
+                || isPresent(AppiumBy.accessibilityId("Update"));
+        boolean hasClose = isPresent(AppiumBy.accessibilityId("CLOSE"))
+                || isPresent(AppiumBy.accessibilityId("Close"))
+                || isPresent(AppiumBy.accessibilityId("Later"));
+        return hasUpdate && hasClose;
+    }
+
+    /** Chi cac nut DONG update dialog (CLOSE/Later...), KHONG bao gom UPDATE (tranh kich update). */
+    private List<By> updateCloseLocators() {
+        List<By> list = new ArrayList<>();
+        list.add(AppiumBy.accessibilityId("CLOSE"));
+        list.add(AppiumBy.accessibilityId("Close"));
+        list.add(AppiumBy.accessibilityId("CANCEL"));
+        list.add(AppiumBy.accessibilityId("Cancel"));
+        list.add(AppiumBy.accessibilityId("Later"));
+        list.add(AppiumBy.accessibilityId("Not Now"));
+        list.add(AppiumBy.accessibilityId("Đóng"));
+        list.add(AppiumBy.accessibilityId("Để sau"));
+        for (String text : new String[]{"CLOSE", "Close", "CANCEL", "Cancel", "Later", "Đóng", "Để sau"}) {
+            list.add(textButton(text));
+            list.add(textTextView(text));
+        }
+        list.add(AppiumBy.id("android:id/button2"));
+        return list;
+    }
+
     private boolean waitForDialog(long waitMs) {
         long deadline = System.currentTimeMillis() + waitMs;
         while (true) {

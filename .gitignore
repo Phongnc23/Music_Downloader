@@ -41,3 +41,6 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Env config rieng cua may (KHONG commit) - dung .env.example lam template ###
+.env

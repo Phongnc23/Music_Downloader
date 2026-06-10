@@ -4,11 +4,94 @@
 <suite name="Music Downloader Test Suite" verbose="1">
     <listeners>
         <listener class-name="listeners.TestListener"/>
+        <listener class-name="listeners.RetryTransformer"/>
     </listeners>
 
-    <test name="Home Test">
+    <test name="Home Tests">
         <classes>
             <class name="testcases.home.Home01_Verify_App_Launched"/>
+            <class name="testcases.home.Home03_Verify_UI_Display"/>
+            <class name="testcases.home.Home05_Verify_Bottom_Nav_And_Mini_Player"/>
+            <class name="testcases.home.Home04_Verify_Quick_Actions"/>
+            <class name="testcases.home.Home02_Verify_Bypass_Ad_After_Interaction"/>
+            <class name="testcases.home.Home06_Verify_Exit_Dialog"/>
         </classes>
     </test>
+
+    <test name="Search Tests">
+        <classes>
+            <class name="testcases.search.Search01_Verify_Navigation"/>
+            <class name="testcases.search.Search02_Verify_Input_And_Suggestions"/>
+            <class name="testcases.search.Search03_Verify_Results_And_Download"/>
+            <class name="testcases.search.Search04_Verify_E2E_Download_And_Verify"/>
+        </classes>
+    </test>
+
+    <test name="Menu Tests">
+        <classes>
+            <class name="testcases.menu.Menu01_Verify_Drawer_Display"/>
+            <class name="testcases.menu.Menu02_Verify_Item_Navigation"/>
+            <class name="testcases.menu.Menu03_Verify_Sleep_Timer"/>
+            <class name="testcases.menu.Menu04_Verify_Settings_Screen"/>
+            <class name="testcases.menu.Menu05_Verify_Exit_Flow"/>
+        </classes>
+    </test>
+
+    <test name="Tracks Tests">
+        <classes>
+            <class name="testcases.tracks.Tracks01_Verify_UI_Display"/>
+            <class name="testcases.tracks.Tracks02_Verify_Sort"/>
+            <class name="testcases.tracks.Tracks03_Verify_Play_Controls"/>
+            <class name="testcases.tracks.Tracks04_Verify_Edit_Sheet"/>
+            <class name="testcases.tracks.Tracks05_Verify_Edit_Actions"/>
+            <class name="testcases.tracks.Tracks06_Verify_Player_Screens"/>
+            <class name="testcases.tracks.Tracks07_Verify_Queue_Advanced"/>
+            <class name="testcases.tracks.Tracks08_Verify_Select_Mode"/>
+        </classes>
+    </test>
+
+    <test name="Artists Tests">
+        <classes>
+            <class name="testcases.artists.Artists01_Verify_UI_Display"/>
+            <class name="testcases.artists.Artists02_Verify_Navigation"/>
+            <class name="testcases.artists.Artists03_Verify_Edit_Sheet"/>
+            <class name="testcases.artists.Artists04_Verify_Edit_Actions"/>
+            <class name="testcases.artists.Artists05_Verify_Share_With_Limit"/>
+            <class name="testcases.artists.Artists06_Verify_Album_Folders"/>
+            <class name="testcases.artists.Artists07_Verify_Detail_Edit_Sheet"/>
+        </classes>
+    </test>
+
+    <test name="Albums Tests">
+        <classes>
+            <class name="testcases.albums.Albums01_Verify_UI_Display"/>
+            <class name="testcases.albums.Albums02_Verify_Navigation"/>
+            <class name="testcases.albums.Albums03_Verify_Sort"/>
+            <class name="testcases.albums.Albums04_Verify_Edit_Sheet"/>
+            <class name="testcases.albums.Albums05_Verify_Share_With_Limit"/>
+            <class name="testcases.albums.Albums06_Verify_Album_Detail"/>
+        </classes>
+    </test>
+
+    <test name="Playlists Tests">
+        <classes>
+            <class name="testcases.playlists.Playlists01_Verify_UI_Display"/>
+            <class name="testcases.playlists.Playlists02_Verify_Navigation"/>
+            <class name="testcases.playlists.Playlists03_Verify_Create_Playlist"/>
+            <class name="testcases.playlists.Playlists04_Verify_Edit_Sheets"/>
+            <class name="testcases.playlists.Playlists05_Verify_Edit_Actions"/>
+            <class name="testcases.playlists.Playlists06_Verify_Share_With_Limit"/>
+        </classes>
+    </test>
+
+    <test name="Search In Library Tests">
+        <classes>
+            <class name="testcases.searchlibrary.SearchLibrary01_Verify_Navigation"/>
+            <class name="testcases.searchlibrary.SearchLibrary02_Verify_UI_Tabs"/>
+            <class name="testcases.searchlibrary.SearchLibrary03_Verify_Search"/>
+            <class name="testcases.searchlibrary.SearchLibrary04_Verify_Tab_Filtering"/>
+            <class name="testcases.searchlibrary.SearchLibrary05_Verify_Result_Navigation"/>
+        </classes>
+    </test>
+
 </suite>

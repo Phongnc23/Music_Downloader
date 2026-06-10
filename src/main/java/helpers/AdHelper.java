@@ -226,6 +226,47 @@ public class AdHelper {
     }
 
     /**
+     * Có đang bị ad full-screen che, HOẶC bị ad đẩy văng sang app khác (Play Store/game)?
+     * Chỉ dùng lệnh ADB + currentActivity (nhanh, idle-safe) nên gọi thường xuyên được.
+     */
+    public boolean isAdShowing() {
+        if (detectByCurrentActivity() != AdType.NONE) return true;
+        String pkg = currentPackageSafe();
+        return pkg != null && !pkg.isEmpty() && !pkg.equals(appPackage);
+    }
+
+    /**
+     * AD-GUARD cho thao tác GIỮA PHIÊN. Gọi NGAY SAU mỗi thao tác (tap/swipe/back…) trong
+     * test. App có thể bung ad bất chợt sau ~40s + thao tác — CÓ HOẶC KHÔNG. Method này:
+     * <ul>
+     *   <li>Chờ tối đa {@code appearWindowMs} xem ad có bung lên không.</li>
+     *   <li>Nếu CÓ → bypass bằng {@link #closeAdInPlaceByAdbTap} (đóng bằng ADB BACK, GIỮ
+     *       NGUYÊN màn đang dở — KHÔNG restart) → test tiếp tục từ ĐÚNG chỗ trước khi có ad.</li>
+     *   <li>Nếu KHÔNG bung trong cửa sổ đó → trả về false ngay, test chạy tiếp bình thường.</li>
+     * </ul>
+     *
+     * <p>Vì đóng ad theo kiểu giữ-state (BACK), sau khi xử lý xong màn hình vẫn ở nguyên
+     * trạng thái trước khi ad đè lên → "chạy tiếp những gì đang chạy" một cách liền mạch.
+     *
+     * @param appearWindowMs thời gian chờ ad có thể bung sau thao tác (vd 5000-7000ms)
+     * @return true nếu đã phát hiện & bypass 1 ad; false nếu không có ad nào bung
+     */
+    public boolean handleAdIfAppears(long appearWindowMs) {
+        long deadline = System.currentTimeMillis() + appearWindowMs;
+        while (System.currentTimeMillis() < deadline) {
+            if (isAdShowing()) {
+                System.out.println("📺 Ad bung giữa phiên → bypass (giữ state) rồi tiếp tục test");
+                boolean ok = closeAdInPlaceByAdbTap(45_000);
+                System.out.println(ok ? "▶ Đã bypass ad giữa phiên, tiếp tục test"
+                        : "⚠ Bypass ad giữa phiên chưa chắc chắn (caller nên kiểm tra lại)");
+                return true;
+            }
+            sleep(500);
+        }
+        return false;  // không có ad → không làm gì, test chạy tiếp
+    }
+
+    /**
      * Dump UI hierarchy qua ADB ({@code uiautomator dump} rồi {@code cat}) và tìm nút
      * đóng ad — trả về center (x,y) để tap qua ADB. Màn ad (WebView Google interstitial)
      * idle nên dump được; home Flutter thì KHÔNG (đó là lý do chỉ dùng cho ad screen).

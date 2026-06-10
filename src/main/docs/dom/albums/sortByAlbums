@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
+<hierarchy index="0" class="hierarchy" rotation="0" width="1720" height="2364">
+  <android.widget.FrameLayout index="0" package="com.musicdownloadapp.musicdownloaderappfree" class="android.widget.FrameLayout" text="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[0,0][1720,2408]" displayed="true">
+    <android.widget.LinearLayout index="0" package="com.musicdownloadapp.musicdownloaderappfree" class="android.widget.LinearLayout" text="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[0,0][1720,2408]" displayed="true">
+      <android.widget.FrameLayout index="0" package="com.musicdownloadapp.musicdownloaderappfree" class="android.widget.FrameLayout" text="" resource-id="android:id/content" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[0,0][1720,2408]" displayed="true">
+        <android.widget.FrameLayout index="0" package="com.musicdownloadapp.musicdownloaderappfree" class="android.widget.FrameLayout" text="" checkable="false" checked="false" clickable="false" enabled="true" focusable="true" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[0,0][1720,2408]" displayed="true">
+          <android.view.View index="0" package="com.musicdownloadapp.musicdownloaderappfree" class="android.view.View" text="" resource-id="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[0,0][1720,2408]" displayed="true">
+            <android.view.View index="0" package="com.musicdownloadapp.musicdownloaderappfree" class="android.view.View" text="" resource-id="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[0,0][1720,2408]" displayed="true">
+              <android.view.View index="0" package="com.musicdownloadapp.musicdownloaderappfree" class="android.view.View" text="" resource-id="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[0,0][1720,2408]" displayed="true">
+                <android.view.View index="0" package="com.musicdownloadapp.musicdownloaderappfree" class="android.view.View" text="" resource-id="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[0,0][1720,2408]" displayed="true">
+                  <android.view.View index="0" package="com.musicdownloadapp.musicdownloaderappfree" class="android.view.View" text="" content-desc="Sort by" resource-id="" checkable="false" checked="false" clickable="false" enabled="true" focusable="true" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[236,2007][497,2118]" displayed="true" />
+                  <android.view.View index="1" package="com.musicdownloadapp.musicdownloaderappfree" class="android.view.View" text="" resource-id="" checkable="false" checked="false" clickable="true" enabled="true" focusable="true" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[1332,1986][1484,2139]" displayed="true" />
+                  <android.view.View index="2" package="com.musicdownloadapp.musicdownloaderappfree" class="android.view.View" text="" content-desc="Title" resource-id="" checkable="false" checked="false" clickable="true" enabled="true" focusable="true" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[140,2188][1580,2360]" displayed="true">
+                    <android.view.View index="0" package="com.musicdownloadapp.musicdownloaderappfree" class="android.view.View" text="" resource-id="" checkable="false" checked="false" clickable="true" enabled="true" focusable="true" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[236,2226][332,2322]" displayed="true" />
+                  </android.view.View>
+                </android.view.View>
+              </android.view.View>
+              <android.view.View index="1" package="com.musicdownloadapp.musicdownloaderappfree" class="android.view.View" text="" resource-id="" checkable="false" checked="false" clickable="false" enabled="true" focusable="false" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[0,0][1720,2408]" displayed="true">
+                <android.view.View index="0" package="com.musicdownloadapp.musicdownloaderappfree" class="android.view.View" text="" content-desc="Scrim" resource-id="" checkable="false" checked="false" clickable="true" enabled="true" focusable="true" focused="false" long-clickable="false" password="false" scrollable="false" selected="false" bounds="[0,0][1720,1907]" displayed="true" />
+              </android.view.View>
+            </android.view.View>
+          </android.view.View>
+        </android.widget.FrameLayout>
+      </android.widget.FrameLayout>
+    </android.widget.LinearLayout>
+  </android.widget.FrameLayout>
+</hierarchy>
+

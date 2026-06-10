@@ -31,9 +31,18 @@ dependencies {
 }
 
 test {
+    // Cho phep chon suite theo TEN khi chay: .\gradlew.bat test -Psuite=menu-only
+    // (mac dinh 'regression'). File suite nam o src/test/resources/<ten>.xml
+    def suiteName = project.findProperty('suite') ?: 'regression'
     useTestNG() {
-        suiteXmlFiles = [file('src/test/resources/regression.xml')]
+        suiteXmlFiles = [file("src/test/resources/${suiteName}.xml")]
     }
+
+    // Cap heap cua JVM fork chay test. Mac dinh Gradle khong set -> JVM lay ~25% RAM
+    // (~2GB) lam max heap, tren may it RAM (8GB) gay "CreateProcess error=8, Not enough
+    // memory" khi fork. 512m du cho Appium client + TestNG + log4j.
+    maxHeapSize = '512m'
+    jvmArgs '-XX:MaxMetaspaceSize=256m'
 
     testLogging {
         events 'passed', 'skipped', 'failed', 'standardOut', 'standardError'
